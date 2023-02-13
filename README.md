@@ -4,7 +4,7 @@
 
 使用方式  `python band.py`
 
-# 2. `ToPOSCAR` -- 结构转换脚本
+# 2. `ToPOSCAR` -- 结构转换脚本(Shell,python混合)
 
 `ToPOSCAR` 用于将CP2K几何优化得到的结构转换为VASP的POSCAR格式
 
