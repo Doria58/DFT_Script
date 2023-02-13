@@ -1,0 +1,84 @@
+#!/bin/bash
+
+path=$(pwd)
+cd ${path}
+
+if [ ! -e OUTCAR  ];then echo "File OUTCAR is no exist..." && exit 1 ;fi
+if [ ! -e OSZICAR  ];then echo "File OSZICAR is no exist..." && exit 1 ;fi
+if [ -e force.re  ];then rm force.re ;fi
+
+
+awk '/POSITION/,/drift/{
+    if(NF==6) print $4,$5,$6;
+    else if($1=="total") print $1 }' OUTCAR > temp.force
+
+force=$(grep EDIFFG OUTCAR | awk '{print $3}')
+
+# Force 
+########
+
+grep F OSZICAR | awk '{print $1,$5}' > temp.energy
+
+cat >> force.py <<EOF
+import math
+import linecache
+import matplotlib.pyplot as plt
+import sys
+import numpy as np
+
+fig, ax = plt.subplots()
+
+File_force = 'temp.force'
+File_energy = 'temp.energy'
+force_ions = []
+force_result = []
+energy_result = []
+ions = []
+Count = 0
+force_limit = abs(float(sys.argv[1]))
+
+LineNumber = 1
+for LineNumber, line in enumerate(open(File_force, 'r', encoding='utf-8').readlines()):
+    LineNumber += 1
+# 统计行数
+
+for item in range(1, LineNumber + 1, 1):
+    text = linecache.getline(File_force, item)
+    text = text.split()
+    text_l = len(text)
+
+    if text_l == 1:
+        Count = Count + 1
+        ions.append(Count)
+        force_result.append(max(force_ions))
+        fp = open('./force.re', 'a+')
+        print(Count, max(force_ions), file=fp)
+        fp.close()
+        force_ions = []
+
+    if text_l == 3:
+        force = math.sqrt(float(text[0]) ** 2 + float(text[1]) ** 2 + float(text[2]) ** 2)
+        force_ions.append(force)
+
+# print(force_result)
+# print(ions)
+
+for item in range(1, len(ions) + 1, 1):
+    energy = linecache.getline(File_energy, item)
+    energy = energy.split()
+
+    energy_result.append(float(energy[1]))
+# print(energy_result)
+
+plt.plot(ions, force_result, 'b', marker='o')
+plt.xlabel('Ions')
+plt.ylabel('Force (eV/atom)')
+plt.axhline(y=force_limit, c='b', ls='--', lw=2)  #
+# z_ax = ax.twinx()  #
+# z_ax.plot(ions, energy_result, 'r', marker='o')
+plt.tight_layout()
+plt.show()
+EOF
+
+python force.py ${force}
+rm force.py temp.energy temp.force
