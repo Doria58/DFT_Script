@@ -1,0 +1,372 @@
+#!/bin/bash
+#Author: He
+#This Script For CP2K OutPut File To VASP Input File
+
+path=$(pwd)
+cd ${path}
+
+clear
+OutFile=($(ls | grep -w out))
+OutFile_Number=$(ls|grep -w out|awk '{print NR}'|tail -n 1)
+
+function GrepXYZFile()
+{
+	XYZ_FileName=$(ls | grep ${Project_name} | grep xyz)
+	XYZ_FileName_Number=$(ls | grep ${Project_name} | grep xyz | awk '{print NR}' | tail -n 1)
+	if [ ${XYZ_FileName_Number} != 1 ];then
+		echo "Your Have More Then 1 xyz File..."
+		echo "Choose Your Want XYZ File..."
+		XYZ_FileName_list=($(ls | grep ${Project_name} | grep xyz))
+		for item in $(seq 0 1 $((${XYZ_FileName_Number} - 1)))
+		do
+			echo -n "[$((${item}+1))]"
+			echo "${XYZ_FileName_list[item]}"
+		done
+
+		declare -i arg
+		read arg
+		while [ ${arg} -le 0 ]
+		do
+			echo -e  "\e[31m Input Error \e[0m"
+			echo "PleAtomes_Numberase Input Your File Number"
+			read arg
+		done
+
+		arg=$((${arg}-1))
+		test ${XYZ_FileName_list[arg]}
+		if [[ $? -eq 0 ]];then
+			XYZ_FileName=${XYZ_FileName_list[arg]}
+		else
+			echo -e  "\e[31m Input Error \e[0m"
+			exit 1
+		fi
+	fi
+
+	echo "Your Print Format is XYZ, Now Convert Your OUTFile...."
+
+	if [ ! -s ${XYZ_FileName} ];then echo "Detect Your xyz File No Text..." && exit 1;fi
+
+Atomes_Number=$(head -n 1 ${XYZ_FileName})
+tail -n ${Atomes_Number} ${XYZ_FileName} >> py_info
+	
+cat >> GetPOS.py <<EOF
+import linecache
+import os
+import sys
+
+Atomes_Line = int(sys.argv[1])  # Liunx
+Atom_Name = []
+Result_1 = []
+Result_2 = []
+Atom_Number_1 = []
+
+InputFile = 'py_info'
+OutFile = 'POSCAR_cp2k'
+
+if os.path.exists('GetPOS.py'):
+    os.remove('GetPOS.py')
+
+for i in range(1, Atomes_Line + 1, 1):
+    info = str(linecache.getline(InputFile, i))
+    info = info.split()
+    info_g = info[0]
+    if info_g not in Atom_Name:
+        Atom_Name.append(info_g)
+for i in range(0, len(Atom_Name), 1):
+    Account = 0
+    Atom_Number = []
+    Atom_Name_g = Atom_Name[i]
+    for j in range(1, Atomes_Line + 1, 1):
+        info = str(linecache.getline(InputFile, j))
+        info = info.split()
+        info_g = info[0]
+        if info_g == Atom_Name_g:
+            Atom_Number.append(j)
+            Account = Account + 1
+    Result_1.append(Atom_Name[i])
+    Result_2.append(Atom_Number)
+    Atom_Number_1.append(Account)
+for i in range(0, len(Atom_Name), 1):
+    fp = open(OutFile, 'a+')
+    print(Result_1[i] + '   ', end='', file=fp)
+    fp.close()
+fp = open(OutFile, 'a+')
+print('', file=fp)
+fp.close()
+for i in range(0, len(Atom_Name), 1):
+    fp = open(OutFile, 'a+')
+    print(str(Atom_Number_1[i]) + '   ', end='', file=fp)
+    fp.close()
+fp = open(OutFile, 'a+')
+print('', file=fp)
+fp.close()
+
+fp = open(OutFile, 'a+')
+print('Cartesian', file=fp)
+fp.close()
+
+for i in range(0, len(Atom_Name), 1):
+    for j in range(0, Atom_Number_1[i], 1):
+        fp = open(OutFile, 'a+')
+        L = linecache.getline(InputFile, int(Result_2[i][j]))
+        L = L.split()
+        print(L[1], L[2], L[3], Result_1[i], j + 1, file=fp)
+        fp.close()
+EOF
+
+python GetPOS.py ${Atomes_Number}
+rm py_info
+
+}
+function GrepPDBFile()
+{
+	echo -e "For Geo OPT,\e[31mnot Command Use PDB Format...\e[0m"
+	PDB_FileName=$(ls | grep ${Project_name} | grep pdb)
+	PDB_FileName_Number=$(ls | grep ${Project_name} | grep pdb | awk '{print NR}' | tail -n 1)
+	if [ ${PDB_FileName_Number} != 1 ];then
+		echo "Your Have More Then 1 pdb File..."
+		echo "Choose Your Want PDB File..."
+		PDB_FileName_list=($(ls | grep ${Project_name} | grep pdb))
+		for item in $(seq 0 1 $((${PDB_FileName_Number} - 1)))
+		do
+			echo -n "[$((${item}+1))]"
+			echo "${PDB_FileName_list[item]}"
+		done
+		declare -i arg
+		read arg
+		while [ ${arg} -le 0 ]
+		do
+			echo -e  "\e[31m Input Error \e[0m"
+			echo "Please Input Your File Number"
+			read arg
+		done
+		arg=$((${arg}-1))
+		test ${PDB_FileName_list[arg]}
+		if [[ $? -eq 0 ]];then
+			PDB_FileName=${XYZ_FileName_list[arg]}
+		else
+			echo -e  "\e[31m Input Error \e[0m"
+			exit 1
+		fi
+	fi
+	echo "Your Print Format is pdb, Now Convert Your OUTFile...."
+	if [ ! -s ${PDB_FileName} ];then echo "Detect Your xyz File No Text..." && exit 1;fi
+	Begin_Line=$(grep -n Step ${PDB_FileName} | awk -F ':' '{print $1}' | tail -n 1)
+	End_Line=$(grep -n END ${PDB_FileName} | tail -n 1 | tr -cd [0-9])
+	Atom_L=$((${End_Line} - ${Begin_Line} - 2 ))
+	sed -n $((${Begin_Line} + 2)),$((${End_Line} - 1))p ${PDB_FileName} >> py_info
+cat >> GetPOS.py <<EOF
+import linecache
+import os
+import sys
+
+Atomes_Line = int(sys.argv[1])  # Liunx
+Atom_Name = []
+Result_1 = []
+Result_2 = []
+Atom_Number_1 = []
+
+InputFile = 'py_info'
+OutFile = 'POSCAR_cp2k'
+
+for i in range(1, Atomes_Line + 1, 1):
+    info = str(linecache.getline(InputFile, i))
+    info = info.split()
+    info_g = info[2]
+    if info_g not in Atom_Name:
+        Atom_Name.append(info_g)
+for i in range(0, len(Atom_Name), 1):
+    Account = 0
+    Atom_Number = []
+    Atom_Name_g = Atom_Name[i]
+    for j in range(1, Atomes_Line + 1, 1):
+        info = str(linecache.getline(InputFile, j))
+        info = info.split()
+        info_g = info[2]
+        if info_g == Atom_Name_g:
+            Atom_Number.append(j)
+            Account = Account + 1
+    Result_1.append(Atom_Name[i])
+    Result_2.append(Atom_Number)
+    Atom_Number_1.append(Account)
+for i in range(0, len(Atom_Name), 1):
+    fp = open(OutFile, 'a+')
+    print(Result_1[i] + '   ', end='', file=fp)
+    fp.close()
+fp = open(OutFile, 'a+')
+print('', file=fp)
+fp.close()
+for i in range(0, len(Atom_Name), 1):
+    fp = open(OutFile, 'a+')
+    print(str(Atom_Number_1[i]) + '   ', end='', file=fp)
+    fp.close()
+fp = open(OutFile, 'a+')
+print('', file=fp)
+fp.close()
+
+fp = open(OutFile, 'a+')
+print('Cartesian', file=fp)
+fp.close()
+
+for i in range(0, len(Atom_Name), 1):
+    for j in range(0, Atom_Number_1[i], 1):
+        fp = open(OutFile, 'a+')
+        L = linecache.getline(InputFile, int(Result_2[i][j]))
+        L = L.split()
+        print(L[3], L[4], L[5], Result_1[i], j + 1, file=fp)
+        fp.close()
+EOF
+
+python GetPOS.py ${Atom_L}
+rm GetPOS.py py_info
+}
+
+OutFile_Name=$1
+if [ ! $1 ];then
+	if [[ ${OutFile_Number} != 1 ]];then
+		echo -e "Detect More Then 1 OutFile,Please Choose Your \e[31m Geometry Optimization \e[0m OutFile (eg. opt.out realx.out)"
+		for OutFile_item in $(seq 0 1 $((${OutFile_Number}-1)))
+		do
+			echo -n "[$((${OutFile_item}+1))]"
+			echo ${OutFile[OutFile_item]}
+		done
+
+		declare -i arg
+		echo "Please Input Your File Number"
+		read arg
+		while [ ${arg} -le 0 ]
+		do
+			echo -e  "\e[31m Input Error \e[0m"
+			echo "Please Input Your File Number"
+			read arg
+		done
+
+		arg=$((${arg}-1))
+		test ${OutFile[arg]}
+		if [[ $? -eq 0 ]];then
+			OutFile_Name=${OutFile[arg]}
+		else
+			echo -e  "\e[31m Input Error \e[0m"
+			exit 1
+		fi
+	else
+		OutFile_Name=${OutFile[0]}
+	fi
+fi
+Input_File_Name=$(grep 'Input file name' ${OutFile_Name}| awk '{print $5}')
+if [ "${Input_File_Name}" == "" ];then echo "Your File Error,Check Your File..." && exit 1;fi
+Run_Type=$(grep 'Run type' ${OutFile_Name}|awk '{print $4}')
+if [ "${Run_Type}" == "" ];then echo "Your File Error,Check Your File..." && exit 1;fi
+
+if [[ "${Run_Type}" == "CELL_OPT" ]];then
+	CELL_OPT_Run_Judge=$(awk '/GEOMETRY OPTIMIZATION COMPLETED/,/Number of electrons:/{print $0}' ${OutFile_Name}|grep CELL)
+	if [ "${CELL_OPT_Run_Judge}" == "" ];then echo "Your OPT have not Complied,Please Check Your File..." && exit 1;fi
+	awk '/GEOMETRY OPTIMIZATION COMPLETED/,/Number of electrons:/{print $0}' ${OutFile_Name}|grep CELL > CELL_INFO
+	Vector=($(grep "Vector" CELL_INFO | awk '{print $10}'))
+	Angle=($(grep "Angle" CELL_INFO| awk '{print $6}'))
+cat >> Get_Vector.py <<EOF
+import math
+import sys
+a = float(sys.argv[1])  # 9.853
+b = float(sys.argv[2])  # 9.858
+c = float(sys.argv[3])  # 9.858
+angle_1 = float(sys.argv[4])
+angle_2 = float(sys.argv[5])
+angle_3 = float(sys.argv[6])
+
+alphe = 2 * math.pi / (360 / angle_1)
+beta = 2 * math.pi / (360 / angle_2)
+gamma = 2 * math.pi / (360 / angle_3)
+# Vector X
+x1 = a
+x2 = 0
+x3 = 0
+# Vector Y
+y1 = b * math.cos(gamma)
+y2 = b * math.sin(gamma)
+y3 = 0
+# Vector Z
+z1 = c * math.cos(beta)
+z2 = c * ((math.cos(alphe) - math.cos(beta) * math.cos(gamma)) / math.sin(gamma))
+z3 = c * (math.sqrt(
+    1 + 2 * math.cos(alphe) * math.cos(beta) * math.cos(gamma) - math.cos(alphe) ** 2 - math.cos(beta) ** 2 - math.cos(
+        gamma) ** 2) / math.sin(gamma))
+
+print("%.16f" % x1, "%.16f" % x2, "%.16f" % x3, "%.16f" % y1, "%.16f" % y2, "%.16f" % y3, "%.16f" % z1, "%.16f" % z2, "%.16f" % z3)
+EOF
+
+Vector_py=($(python Get_Vector.py ${Vector[0]} ${Vector[1]} ${Vector[2]} ${Angle[0]} ${Angle[1]} ${Angle[2]}))
+if [ -e Get_Vector.py ];then  rm Get_Vector.py; fi
+echo "CP2K Out File To POSCAR" > ./POSCAR_cp2k
+echo " "  " 1.0" >> ./POSCAR_cp2k
+echo " "  " ${Vector_py[0]} "     " ${Vector_py[1]} "     " ${Vector_py[2]}" >> ./POSCAR_cp2k
+echo " "  " ${Vector_py[3]} "     " ${Vector_py[4]} "     " ${Vector_py[5]}" >> ./POSCAR_cp2k
+echo " "  " ${Vector_py[6]} "     " ${Vector_py[7]} "     " ${Vector_py[8]}" >> ./POSCAR_cp2k
+
+Print_Format_line=$(grep -w 'TRAJECTORY' ${Input_File_Name} -n | head -n 1| awk -F ':' '{print $1}')
+Print_Format=$(sed -n $((${Print_Format_line}+1))p ${Input_File_Name} | awk '{print $2}')
+Project_name=$(grep -w 'PROJECT' ${Input_File_Name} | awk '{print $2}')
+
+if [[ "${Print_Format}" == "xyz" ]];then
+		GrepXYZFile
+elif [[ "${Print_Format}" == "pdb" ]];then
+		GrepPDBFile
+elif [[ "${Print_Format}" == "" ]];then
+		GrepXYZFile
+else
+	echo "This Script Support XYZ and PDB File Now..."
+	exit 1
+fi
+echo -e "
+###################Author:He Huang#####################
+#################For CP2K To POSCAR####################
+###>>>>>>>>>>>>>>\e[31mWriting POSCAR_cp2k\e[0m<<<<<<<<<<<<<<<<###
+###                                                 ###
+###                 \e[31mFinished ! !\e[0m                    ###
+###                                                 ###
+#######################################################
+#######################################################"
+
+if [ -e CELL_INFO ];then  rm CELL_INFO; fi
+elif [[ "${Run_Type}" == "GEO_OPT" ]];then
+	Input_Set_Jug=$(grep -w  'SUBSYS' ${Input_File_Name})
+	if [ "${Input_Set_Jug}" == "" ];then echo "This Script Only Support SUBSYS Module Now..." && exit 1;fi
+	awk '/&SUBSYS/,/&END SUBSYS/{print $0}' ${Input_File_Name} > CELL_INFO
+	Vector_A=($(grep -w A CELL_INFO | awk '{print $2,"  " $3, "  " $4}'))
+	Vector_B=($(grep -w B CELL_INFO | awk '{print $2,"  " $3, "  " $4}'))
+	Vector_C=($(grep -w C CELL_INFO | awk '{print $2,"  " $3, "  " $4}'))
+
+	echo "CP2K Out File To POSCAR" > ./POSCAR_cp2k
+	echo " "  " 1.0" >> ./POSCAR_cp2k
+	echo " "  " ${Vector_A[0]} "     " ${Vector_A[1]} "     " ${Vector_A[2]}" >> ./POSCAR_cp2k
+	echo " "  " ${Vector_B[0]} "     " ${Vector_B[1]} "     " ${Vector_B[2]}" >> ./POSCAR_cp2k
+	echo " "  " ${Vector_C[0]} "     " ${Vector_C[1]} "     " ${Vector_C[2]}" >> ./POSCAR_cp2k
+
+	Print_Format_line=$(grep -w 'TRAJECTORY' ${Input_File_Name} -n | head -n 1| awk -F ':' '{print $1}')
+	Print_Format=$(sed -n $((${Print_Format_line}+1))p ${Input_File_Name} | awk '{print $2}')
+	Project_name=$(grep -w 'PROJECT' ${Input_File_Name} | awk '{print $2}')
+
+	if [[ "${Print_Format}" == "xyz" ]];then
+		GrepXYZFile
+	elif [[ "${Print_Format}" == "pdb" ]];then
+		GrepPDBFile
+	elif [[ "${Print_Format}" == "" ]];then
+		GrepXYZFile
+	else
+		echo "This Script Support XYZ and PDB File Now..."
+	exit 1
+	fi
+echo -e "
+###################Author:He Huang#####################
+#################For CP2K To POSCAR####################
+###>>>>>>>>>>>>>>\e[31mWriting POSCAR_cp2k\e[0m<<<<<<<<<<<<<<<<###
+###                                                 ###
+###                 \e[31mFinished ! !\e[0m                    ###
+###                                                 ###
+#######################################################
+#######################################################"
+if [ -e CELL_INFO ];then  rm CELL_INFO; fi
+else
+	echo -e "This Script Support \e[31m CELL_OPT \e[0m And \e[31m GEO_OPT \e[0m Now......"
+	exit 1
+fi
