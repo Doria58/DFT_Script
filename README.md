@@ -6,6 +6,6 @@
 
 # 2. `ToPOSCAR` -- 结构转换脚本(Shell,python混合)
 
-`ToPOSCAR` 用于将CP2K几何优化得到的结构转换为VASP的POSCAR格式
+`ToPOSCAR` 将CP2K几何优化得到的结构转换为VASP的POSCAR格式
 
 使用方式  `sh ToPOSCAR` or `sh ToPOSCAR opt.out`(opt.out为结构优化输出的out文件)
