@@ -1,0 +1,111 @@
+#!/bin/bash
+
+clear
+path=$(pwd)
+cd ${path}
+
+File_Path=$1
+test ${File_Path}
+if [ $? -eq 1 ];then
+	echo "Input Your File Path..."
+	read File_Path
+fi
+
+[ -e ${File_Path} ]
+if [ $? -eq 1 ];then
+	echo "Check Your Input..."
+	exit 1
+fi
+
+File_Line_8=$(cat ${File_Path}|sed -n 8p)
+Jugde_Char=${File_Line_8:0:1}
+
+if [[ "${Jugde_Char}" == "D" ]] || [[ "${Jugde_Char}" == "d" ]];then
+	Begin_Line=9
+	IS_Dir=T
+elif [[ "${Jugde_Char}" == "C" ]] || [[ "${Jugde_Char}" == "c" ]];then
+	Begin_Line=9
+	IS_Dir=F
+elif [[ "${Jugde_Char}" == "S" ]] || [[ "${Jugde_Char}" == "s" ]];then
+	Begin_Line=10
+	Var_1=$(cat ${File_Path}|sed -n 9p)
+	Jugde_Char_Again=${Var_1:0:1}
+	if [[ "${Jugde_Char_Again}" == "D" ]] || [[ "${Jugde_Char_Again}" == "d" ]];then
+		IS_Dir=T
+	else
+		IS_Dir=F
+	fi
+else 
+	echo "Something Error in Your File,Check Your File First..."
+	exit 1
+fi
+
+echo "---------------------------Function Choice---------------------------"
+echo "                       [1] Direct To Cartesian                       "
+echo "                       [2] Cartesian To Direct                       "
+echo "-----------------------------Author: He------------------------------"
+read M_Function
+
+Zoom_factor=$(cat ${File_Path}|sed -n 2p)
+vector_a=($(cat ${File_Path}|sed -n 3p))
+vector_b=($(cat ${File_Path}|sed -n 4p))
+vector_c=($(cat ${File_Path}|sed -n 5p))
+
+for i in $(seq 0 1 2)
+do
+	vector_a[i]=$(echo "${vector_a[i]} * ${Zoom_factor}"|bc )
+	vector_b[i]=$(echo "${vector_b[i]} * ${Zoom_factor}"|bc )
+	vector_c[i]=$(echo "${vector_c[i]} * ${Zoom_factor}"|bc )
+done
+
+Atoms_Number=($(cat ${File_Path}|sed -n 7p))
+
+Atomes_Sum=0
+for i in $(seq 0 1 $((${#Atoms_Number[*]} - 1)))
+do
+	Atomes_Sum=$((${Atomes_Sum} + ${Atoms_Number[i]}))
+done
+
+###########   Dir To Car  ###########
+if [ ${M_Function} -eq 1 ];then
+	if [ "${IS_Dir}" ==  "F" ];then
+		echo "This File is Cartesian Now, Please Choice Again..."
+		exit 1
+	fi
+	echo "Direct To Cartesian...."
+	sed -i "$((${Begin_Line}-1))c Cartesian" ${File_Path}
+	for i in $(seq 0 1 $((${Atomes_Sum}-1)))
+	do
+		a=($(sed -n $((${Begin_Line}+${i}))p ${File_Path} | awk '{print $1,$2,$3}'))
+		for j in $(seq 0 1 2)
+		do
+				a[j]=$(echo "scale=16;${vector_a[j]} * ${a[0]} + ${vector_b[j]} * ${a[1]} + ${vector_c[j]} * ${a[2]}" | bc |awk '{printf "%.16f", $0}')
+		done
+		sed -i "$((${Begin_Line}+${i}))c ${a[*]}" ${File_Path}
+	done
+	echo "Done!!!"
+###########   Dir To Car  ###########
+elif [ ${M_Function} -eq 2 ];then
+	if [ "${IS_Dir}" ==  "T" ];then
+		echo "This File is Direct Now, Please Choice Again..."
+		exit 1
+	fi
+	echo "Cartesian To Direct...."
+	sed -i "$((${Begin_Line}-1))c Direct" ${File_Path}
+	for i in $(seq 0 1 $((${Atomes_Sum}-1)))
+	do
+		a=($(sed -n $((${Begin_Line}+${i}))p ${File_Path} | awk '{print $1,$2,$3}'))
+		# X	
+		up=$(echo "scale=16;${vector_b[0]} * ${vector_c[1]} * ${a[2]} + ${vector_c[0]} * ${a[1]} * ${vector_b[2]} + ${a[0]} * ${vector_b[1]} * ${vector_c[2]} - ${vector_b[0]} * ${a[1]} * ${vector_c[2]} - ${vector_c[0]} * ${vector_b[1]} * ${a[2]} - ${a[0]} * ${vector_c[1]} * ${vector_b[2]}"| bc)
+		down=$(echo "scale=16;${vector_a[0]} * ${vector_b[1]} * ${vector_c[2]} + ${vector_b[0]} * ${vector_c[1]} * ${vector_a[2]} + ${vector_c[0]} * ${vector_a[1]} * ${vector_b[2]} - ${vector_a[0]} * ${vector_c[1]} * ${vector_b[2]} - ${vector_b[0]} * ${vector_a[1]} * ${vector_c[2]} - ${vector_c[0]} * ${vector_b[1]} * ${vector_a[2]}"| bc)
+		a[0]=$(echo "scale=16;${up}/${down} "| bc |awk '{printf "%.16f", $0}')
+ 		# Y
+ 		up=$(echo "scale=16;${vector_a[0]} * ${a[1]} * ${vector_c[2]} - ${vector_a[0]} * ${vector_c[1]} * ${a[2]} + ${vector_c[0]} * ${vector_a[1]}  * ${a[2]} - ${vector_c[0]} * ${a[1]} * ${vector_a[2]} - ${a[0]} * ${vector_a[1]} * ${vector_c[2]} + ${a[0]} * ${vector_c[1]} * ${vector_a[2]}"|bc)
+ 		a[1]=$(echo "scale=16;${up}/${down} "| bc |awk '{printf "%.16f", $0}')
+ 		# Z
+ 		up=$(echo "scale=16;${vector_a[0]} * ${vector_b[1]} * ${a[2]} - ${vector_a[0]} * ${a[1]} * ${vector_b[2]} - ${vector_b[0]} * ${vector_a[1]} * ${a[2]} + ${vector_b[0]} * ${a[1]} * ${vector_a[2]} + ${a[0]} * ${vector_a[1]} * ${vector_b[2]} - ${a[0]} * ${vector_b[1]} * ${vector_a[2]}"|bc)
+ 		a[2]=$(echo "scale=16;${up}/${down} "| bc |awk '{printf "%.16f", $0}')
+ 		sed -i "$((${Begin_Line}+${i}))c ${a[*]}" ${File_Path}
+ 	done
+ 	echo "Done!!!"
+fi
