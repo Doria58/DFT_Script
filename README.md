@@ -19,3 +19,9 @@
 `band.py` 用于实现观察VASP几何优化时结构的受力情况,并使用`matploblib`绘制
 
 使用方式： 在计算目录  `sh force`
+
+# 4. `Cart_To_Dirc`-- 坐标转换
+
+`Cart_To_Dirc` 用于VASP的POSCAR的两种坐标格式之间转化，纯Shell，效率较慢😂
+
+使用方式： 在计算目录  `sh Cart_To_Dirc POSCAR`
