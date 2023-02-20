@@ -6,7 +6,7 @@
 
 使用方式: 在计算目录 `python band.py`
 
-# 2. `ToPOSCAR` -- 结构转换(Shell,python混合)
+# 2. `ToPOSCAR` -- 结构转换
 
 `ToPOSCAR` 将CP2K几何优化得到的结构转换为VASP的POSCAR格式
 
@@ -14,7 +14,7 @@
 
 --------------------------------------------------------------------------------------
                                                VASP_Script
-# 3. `force`-- 查看结构优化受力（Shell,python混合）
+# 3. `force`-- 查看结构优化受力
 
 `band.py` 用于实现观察VASP几何优化时结构的受力情况,并使用`matploblib`绘制
 
