@@ -2,7 +2,7 @@
                                                 CP2K_Script
 # 1. `band.py`--能带后处理：
 
-`band.py`  整合了`cp2k_bs2csv`功能，CP2K计算能带得到.bs文件后使用该脚本可一步获得用于Origin绘图的数据
+`band.py`  整合了`cp2k_bs2csv`功能，CP2K计算能带得到.out文件后使用该脚本可一步获得用于Origin绘图的数据
 
 使用方式: 在计算目录 `python band.py`
 
