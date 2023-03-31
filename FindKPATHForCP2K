@@ -1,0 +1,53 @@
+#!/bin/bash
+
+path=$(pwd)
+cd ${path}
+
+if [ ! -e band.inp ];then echo "band.inp文件不存在..." && exit 1 ;fi
+
+if [ ! -e KPATH.in ];then 
+	if [ ! -e ToPOSCAR ];then echo "文件夹中没有找到ToPOSCAR脚本，请将该脚本复制到该文件夹下" && exit 1; fi
+	sh ./ToPOSCAR
+	if [ -e POSCAR ];then echo "检测到文件夹中已经存在POSCAR文件，将重命名为poscar_Pric" && mv POSCAR poscar_Pric;fi
+	mv POSCAR_cp2k POSCAR
+	vaspkit -task 302 > vaspkit.log  # 对于块状材料
+	rm SYMMETRY && rm PRIMCELL.vasp && rm HIGH_SYMMETRY_POINTS && rm vaspkit.log
+fi
+
+Band_txt_Jug=$(grep '&BAND_STRUCTURE' band.inp)
+if [[ ${Band_txt_Jug}  !=  "" ]];then
+	echo "band.inp文件中已有高对称路径..."
+	echo "脚本将退出..."
+	exit 1
+fi
+
+KPATH_LineNumber=$(awk '{print NR}' KPATH.in  | tail -n 1)
+K_Points=$(sed -n 2p KPATH.in | tr -cd [0-9])
+sed -n 5,21p KPATH.in | sed '/^\s*$/d' | uniq | awk '{print $1,$2,$3,$4}' > ./for_cp2k.band
+XC_line_Number=$(grep XC band.inp -n | tail -n 1 | tr -cd [0-9])
+K_bands_Line_Number=$(awk '{print NR}' for_cp2k.band | tail -n 1)
+
+sed -i "${XC_line_Number}a&PRINT" band.inp
+sed -i "$((${XC_line_Number}+1))a&BAND_STRUCTURE" band.inp
+sed -i "$((${XC_line_Number}+2))aADDED_MOS 2" band.inp
+sed -i "$((${XC_line_Number}+3))aFILE_NAME band.bs" band.inp
+sed -i "$((${XC_line_Number}+4))a&KPOINT_SET" band.inp
+sed -i "$((${XC_line_Number}+5))aUNITS B_VECTOR" band.inp
+
+for i in $(seq 1 1 ${K_bands_Line_Number})
+do
+	txt=$(sed -n ${i}p for_cp2k.band | awk '{print $1,$2,$3,"#",$4}')
+	sed -i "$((${XC_line_Number} + 5 + ${i}))aSPECIAL_POINT ${txt}" band.inp
+done
+
+sed -i "$((${XC_line_Number} + 5 + ${K_bands_Line_Number} + 1))aNPOINTS ${K_Points}" band.inp
+sed -i "$((${XC_line_Number} + 5 + ${K_bands_Line_Number} + 2))a&END" band.inp
+sed -i "$((${XC_line_Number} + 5 + ${K_bands_Line_Number} + 3))a&END BAND_STRUCTURE" band.inp
+sed -i "$((${XC_line_Number} + 5 + ${K_bands_Line_Number} + 4))a&END PRINT" band.inp
+
+rm for_cp2k.band && rm KPATH.in
+
+echo "高对称路径已经写入band.inp文件中"
+
+if [ -e INCAR ];then rm INCAR ;fi
+if [ -e POTCAR ];then rm POTCAR ;fi
