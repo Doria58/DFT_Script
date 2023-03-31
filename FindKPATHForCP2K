@@ -10,7 +10,7 @@ if [ ! -e KPATH.in ];then
 	sh ./ToPOSCAR
 	if [ -e POSCAR ];then echo "检测到文件夹中已经存在POSCAR文件，将重命名为poscar_Pric" && mv POSCAR poscar_Pric;fi
 	mv POSCAR_cp2k POSCAR
-	vaspkit -task 302 > vaspkit.log  # 对于块状材料
+	vaspkit -task 302 > vaspkit.log  # 对于二维材料
 	rm SYMMETRY && rm PRIMCELL.vasp && rm HIGH_SYMMETRY_POINTS && rm vaspkit.log
 fi
 
