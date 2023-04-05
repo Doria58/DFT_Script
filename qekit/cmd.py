@@ -4,15 +4,28 @@ import re
 import Get_PotFile
 import ReadStructure
 import sys
+import platform
 
+if platform.system() == 'Windows':
+    dis = "\\"
+elif platform.system() == 'Linux':
+    dis = "//"
+root_dir = os.path.expanduser("~")
 
 def OutputTime():
     now = datetime.datetime.now()
     return now.strftime("%H:%M:%S")
 
 
+def Exit():
+    print('----------------------------------------------')
+    print('Thank Your For Use, I Hope You Know What are you doing...^-^\nAuthor:He Email:blackmax993@gmail.com')
+    print('----------------------------------------------')
+    sys.exit()
+
+
 # 配置文件地址
-Config_File = 'E:\Python_ProjectFile\qekit\.qekit'
+Config_File = os.path.join(root_dir, '.qekit')
 
 try:
     User_Input_File_Name = sys.argv[1]
@@ -48,11 +61,9 @@ while True:
     USerInput = str(input())
 
     if USerInput == "0":
-        break
+        Exit()
     elif USerInput == "1":
         pass
     elif USerInput == "2":
-        Get_PotFile.Get_POTFile(POT_Root_Path, atom_lable)
-
-
-
+        POT_FILE_NAME = Get_PotFile.Get_POTFile(POT_Root_Path, atom_lable)
+        Exit()
