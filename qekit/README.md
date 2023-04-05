@@ -1,2 +1,2 @@
-### QEkit   Version:0.01
+### QEkit   Version:0.02
 ### Author: He email:blackmax993@gmail.com
