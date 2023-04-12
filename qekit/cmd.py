@@ -1,7 +1,7 @@
 import os
 import datetime
 import re
-import Get_PotFile
+import Get_PotFile, Gener_Input
 import ReadStructure
 import sys
 import platform
@@ -11,6 +11,7 @@ if platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     dis = "//"
 root_dir = os.path.expanduser("~")
+
 
 def OutputTime():
     now = datetime.datetime.now()
@@ -30,14 +31,14 @@ Config_File = os.path.join(root_dir, '.qekit')
 try:
     User_Input_File_Name = sys.argv[1]
     absfile = os.path.abspath(User_Input_File_Name)
-    succuss, atom_lable, atom_number = ReadStructure.Jug_Input_File(absfile)
+    succuss, atom_lable, Latice_vector, Latice_const, pos_info, Atom_fix = ReadStructure.Jug_Input_File(absfile)
 except IndexError:
     print('---> Now Input Your Structure: <---')
     os.system('dir')
     print('------------------------------------')
     Input_file_name = input()
     absfile = os.path.abspath(Input_file_name)
-    succuss, atom_lable, atom_number = ReadStructure.Jug_Input_File(absfile)
+    succuss, atom_lable, Latice_vector, Latice_const, pos_info, Atom_fix = ReadStructure.Jug_Input_File(absfile)
 
 if not succuss:
     print(OutputTime(), 'Now Exiting....')
@@ -63,7 +64,10 @@ while True:
     if USerInput == "0":
         Exit()
     elif USerInput == "1":
-        pass
+        suc, set_dir = Gener_Input.gen_set(Latice_const, Atom_fix)
+        if suc:
+            Gener_Input.gener(Latice_vector, pos_info, absfile, set_dir)
+        Exit()
     elif USerInput == "2":
         POT_FILE_NAME = Get_PotFile.Get_POTFile(POT_Root_Path, atom_lable)
         Exit()
