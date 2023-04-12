@@ -4,7 +4,6 @@ import re
 import os
 import sys
 import numpy as np
-import time
 
 
 def Decompose_POSCAR(filepath):
@@ -319,7 +318,7 @@ def Decompose_CIF(CIFfile):
                     Toend += 1
                     Toend_txt = linecache.getline(CIFfile, Toend).strip().split()
                     if re.search('loop_', ''.join(Toend_txt)) or not Toend_txt and not linecache.getline(CIFfile,
-                                                                                                         Toend + 1).strip().split():
+                                                                                                        Toend + 1).strip().split():
                         break
                 break
 
@@ -375,7 +374,6 @@ def Jug_Input_File(Input_File):
         print(f"{'  '.join(a_label)}\n{'  '.join(a_number)} ----> Total: {tot_number}")
         return a_label, a_number
 
-
     point_file = os.path.splitext(Input_File)[1]
     print('---------- QEkit version: 0.01 ----------')
     if not point_file or point_file == ".vasp":
@@ -408,9 +406,9 @@ def Jug_Input_File(Input_File):
         print(
             f"---->>> alphe:{Latice_angle['alphe']} beta:{Latice_angle['beta']} gamma:{Latice_angle['gamma']} Volume: {volume} <<<-----")
 
-        atom_lable, atom_numberr = get_atom_info()
+        atom_lable, atom_number = get_atom_info()
 
-        return True, atom_lable, atom_numberr
+        return True, atom_lable, Latice_vector, Latice_const, pos_info, Atom_fix
 
     elif point_file == ".cif":
         success, Latice_vector, Latice_const, Latice_angle, volume, pos_info = Decompose_CIF(Input_File)
@@ -424,9 +422,9 @@ def Jug_Input_File(Input_File):
         print(
             f"---->>> alphe:{Latice_angle['alphe']} beta:{Latice_angle['beta']} gamma:{Latice_angle['gamma']} Volume: {volume} <<<-----")
 
-        atom_lable, atom_numberr = get_atom_info()
+        atom_lable, atom_number = get_atom_info()
 
-        return True, atom_lable, atom_numberr
+        return True, atom_lable, Latice_vector, Latice_const, pos_info, False
 
     else:
         print('Only Support POSCAR and cif format now!!!')
