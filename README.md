@@ -22,7 +22,7 @@
 
 # 4. `Cart_To_Dirc`-- 坐标转换
 
-`Cart_To_Dirc` 用于VASP的POSCAR的两种坐标格式之间转化，纯Shell，效率较慢😂
+`Cart_To_Dirc` 用于VASP的POSCAR的两种坐标格式之间转化
 
 使用方式: 在计算目录  `sh Cart_To_Dirc POSCAR`
 
