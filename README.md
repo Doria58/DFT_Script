@@ -26,6 +26,12 @@
 
 使用方式: 在计算目录  `sh Cart_To_Dirc POSCAR`
 
+# 4. `BandExtract.cpp`-- 能带数据提取
+
+`BandExtract.cpp` 用于提取VASP计算的能带数据，目前只支持无自旋、无SOC的能带数据
+
+使用方式: 'g++ BandExtract.cpp -o exe' && './exe' (需要确保文件夹中有DOSCAR、POSCAR、PROCAR、KPOINTS等文件)
+
 --------------------------------------------------------------------------------------
                                                QE_Script
 Todo...
