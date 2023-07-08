@@ -12,7 +12,8 @@
 
 // blackmax993@gmail.com
 // Version 0.1 Only Support Normal Band  2023.7.8
-// TODO:   Add SOC And Spin Band Date....
+// TODO1: Add SOC And Spin Band Date....
+// TODO2: PBAND Function...
 
 using namespace std;
 
@@ -315,7 +316,7 @@ void Read_PROCAR(double fermienergy, double bz_distance)
 
     ////       Main Function To Read PROCAR File...       ////
 
-    cout << "-->> " << "Date File Was Successful Writen in band.dat File..." << endl;
+    cout << "-->> " << "Date File Was Successful Writen in \033[31mband.dat\033[0m File..." << endl;
 
 }
 
@@ -425,7 +426,7 @@ struct DataPoint {
     double y;
 };
 
-int Show_BandType()
+int Show_BandType(double bz_distance)
 {
     ifstream ifs("band.dat");
 
@@ -493,17 +494,25 @@ int Show_BandType()
             }
         }
 
+        double epsilon = 0.00001;
+
+        // cout << maxXNegative << " " << minXPositive << " " << maxXNegative + minXPositive << " " << bz_distance <<endl;
+
         if ((minPositive - maxNegative) < 0.01)
         {
-            cout << "-->> " << "Band Gap (eV): " << minPositive - maxNegative << " Band Type: Metallic" <<endl;
+            cout << "-->> " << "Band Gap (eV): " << "\033[31m" << minPositive - maxNegative << "\033[0m" << " Band Type: \033[31mMetallic\033[0m" <<endl;
         }
-        else if (maxXNegative == minXPositive)
+        else if (maxXNegative == minXPositive )
         {
-            cout << "-->> " << "Band Gap (eV): " << minPositive - maxNegative << " Band Type: Direct" <<endl;
+            cout << "-->> " << "Band Gap (eV): " << "\033[31m" << minPositive - maxNegative << "\033[0m" << " Band Type: \033[31mDirect\033[0m" <<endl;
         }
-        else if (maxXNegative != minXPositive)
+        else if (bz_distance - (maxXNegative + minXPositive) < epsilon )
         {
-            cout << "-->> " << "Band Gap (eV): " << minPositive - maxNegative << " Band Type: Indirect" <<endl;
+            cout << "-->> " << "Band Gap (eV): " << "\033[31m" << minPositive - maxNegative << "\033[0m" <<" Band Type: \033[31mDirect\033[0m" <<endl;
+        }
+        else 
+        {
+            cout << "-->> " << "Band Gap (eV): " << "\033[31m" << minPositive - maxNegative << "\033[0m" << " Band Type: \033[31mIndirect\033[0m" <<endl;
         }
 
         return 0;
@@ -524,7 +533,7 @@ int main()
 
     Read_PROCAR(fermienergy, bz_distance);        // 读取PROCAR文件
 
-    Show_BandType(); // 打印能带信息
+    Show_BandType(bz_distance); // 打印能带信息
 
     for (int i = 0; i < 3; i++) // 释放内存 Realse Memory
     {
